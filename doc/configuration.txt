@@ -4411,6 +4411,10 @@ http-request del-header <name> [ { if | unless } <condition> ]
 
   This removes all HTTP header fields whose name is specified in <name>.
 
+http-request del-header-prefix <prefix> [ { if | unless } <condition> ]
+
+  This removes all HTTP header fields whose name begins with <prefix>.
+
 http-request del-map(<file-name>) <key fmt> [ { if | unless } <condition> ]
 
   This is used to delete an entry from a MAP. The MAP must be loaded from a
@@ -5118,6 +5122,10 @@ http-response del-acl(<file-name>) <key fmt> [ { if | unless } <condition> ]
 http-response del-header <name> [ { if | unless } <condition> ]
 
   This removes all HTTP header fields whose name is specified in <name>.
+
+http-response del-header-prefix <prefix> [ { if | unless } <condition> ]
+
+  This removes all HTTP header fields whose name begins with <prefix>.
 
 http-response del-map(<file-name>) <key fmt> [ { if | unless } <condition> ]
 

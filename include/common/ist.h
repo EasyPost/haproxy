@@ -363,6 +363,20 @@ static inline int istneq(const struct ist ist1, const struct ist ist2, size_t co
 	return isteq(l, r);
 }
 
+/* returns non-zero if <ist1> equals <ist2> on the first <count> characters,
+ * ignoring the case (empty strings are equal) */
+static inline int istneqi(const struct ist ist1, const struct ist ist2, size_t count)
+{
+	struct ist l = ist1;
+	struct ist r = ist2;
+
+	if (l.len > count)
+		l.len = count;
+	if (r.len > count)
+		r.len = count;
+	return isteqi(l, r);
+}
+
 /* copies <src> over <dst> for a maximum of <count> bytes. Returns the number
  * of characters copied (src.len), or -1 if it does not fit. In all cases, the
  * contents are copied prior to reporting an error, so that the destination

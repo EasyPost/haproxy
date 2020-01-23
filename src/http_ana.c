@@ -2961,6 +2961,13 @@ static enum rule_result http_req_get_intercept_rule(struct proxy *px, struct lis
 					http_remove_header(htx, &ctx);
 				break;
 
+			case ACT_HTTP_DEL_HDR_PREFIX:
+				/* remove all occurrences of the header */
+				ctx.blk = NULL;
+				while (http_find_header_adv(htx, rule->arg.http.str, &ctx, 1, 1))
+					http_remove_header(htx, &ctx);
+				break;
+
 			/* other flags exists, but normally, they never be matched. */
 			default:
 				break;
@@ -3106,6 +3113,13 @@ resume_execution:
 				/* remove all occurrences of the header */
 				ctx.blk = NULL;
 				while (http_find_header(htx, rule->arg.http.str, &ctx, 1))
+					http_remove_header(htx, &ctx);
+				break;
+
+			case ACT_HTTP_DEL_HDR_PREFIX:
+				/* remove all occurrences of the header */
+				ctx.blk = NULL;
+				while (http_find_header_adv(htx, rule->arg.http.str, &ctx, 1, 1))
 					http_remove_header(htx, &ctx);
 				break;
 

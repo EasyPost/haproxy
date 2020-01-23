@@ -33,6 +33,7 @@ extern struct list http_errors_list;
 
 struct htx_sl *http_get_stline(struct htx *htx);
 int http_find_header(const struct htx *htx, const struct ist name, struct http_hdr_ctx *ctx, int full);
+int http_find_header_adv(const struct htx *htx, const struct ist name, struct http_hdr_ctx *ctx, int full, int prefix);
 int http_add_header(struct htx *htx, const struct ist n, const struct ist v);
 int http_replace_stline(struct htx *htx, const struct ist p1, const struct ist p2, const struct ist p3);
 int http_replace_req_meth(struct htx *htx, const struct ist meth);

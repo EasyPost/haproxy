@@ -81,10 +81,11 @@ struct htx_sl *http_get_stline(struct htx *htx)
  * set, it works on full-line headers in whose comma is not a delimiter but is
  * part of the syntax. A special case, if ctx->value is NULL when searching for
  * a new values of a header, the current header is rescanned. This allows
- * rescanning after a header deletion.
+ * rescanning after a header deletion. If <prefix> is set, it only looks for headers
+ * for whom <name> is a prefix of the header name.
  */
-int http_find_header(const struct htx *htx, const struct ist name,
-		    struct http_hdr_ctx *ctx, int full)
+int http_find_header_adv(const struct htx *htx, const struct ist name,
+		    struct http_hdr_ctx *ctx, int full, int prefix)
 {
 	struct htx_blk *blk = ctx->blk;
 	struct ist n, v;
@@ -125,8 +126,13 @@ int http_find_header(const struct htx *htx, const struct ist name,
 		if (name.len) {
 			/* If no name was passed, we want any header. So skip the comparison */
 			n = htx_get_blk_name(htx, blk);
-			if (!isteqi(n, name))
-				goto next_blk;
+			if (prefix) {
+				if (!istneqi(n, name, name.len))
+					goto next_blk;
+			} else {
+				if (!isteqi(n, name))
+					goto next_blk;
+			}
 		}
 		v = htx_get_blk_value(htx, blk);
 
@@ -156,6 +162,23 @@ int http_find_header(const struct htx *htx, const struct ist name,
 	ctx->value = ist("");
 	ctx->lws_before = ctx->lws_after = 0;
 	return 0;
+}
+
+/* Finds the first or next occurrence of header <name> in the HTX message <htx>
+ * using the context <ctx>. This structure holds everything necessary to use the
+ * header and find next occurrence. If its <blk> member is NULL, the header is
+ * searched from the beginning. Otherwise, the next occurrence is returned. The
+ * function returns 1 when it finds a value, and 0 when there is no more. It is
+ * designed to work with headers defined as comma-separated lists. If <full> is
+ * set, it works on full-line headers in whose comma is not a delimiter but is
+ * part of the syntax. A special case, if ctx->value is NULL when searching for
+ * a new values of a header, the current header is rescanned. This allows
+ * rescanning after a header deletion.
+ */
+inline int http_find_header(const struct htx *htx, const struct ist name,
+		    struct http_hdr_ctx *ctx, int full)
+{
+	return http_find_header_adv(htx, name, ctx, full, 0);
 }
 
 /* Adds a header block int the HTX message <htx>, just before the EOH block. It

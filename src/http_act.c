@@ -1376,6 +1376,33 @@ static enum act_parse_ret parse_http_del_header(const char **args, int *orig_arg
 	return ACT_RET_PRS_OK;
 }
 
+/* Parse a "del-header-prefix" action. It takes an header prefix as argument. It returns
+ * ACT_RET_PRS_OK on success, ACT_RET_PRS_ERR on error.
+ */
+static enum act_parse_ret parse_http_del_header_prefix(const char **args, int *orig_arg, struct proxy *px,
+						struct act_rule *rule, char **err)
+{
+	int cur_arg;
+
+	rule->action = ACT_HTTP_DEL_HDR_PREFIX;
+	rule->release_ptr = release_http_action;
+
+	cur_arg = *orig_arg;
+	if (!*args[cur_arg]) {
+		memprintf(err, "expects exactly 1 arguments");
+		return ACT_RET_PRS_ERR;
+	}
+
+	rule->arg.http.str.ptr = strdup(args[cur_arg]);
+	rule->arg.http.str.len = strlen(rule->arg.http.str.ptr);
+
+	px->conf.args.ctx = (rule->from == ACT_F_HTTP_REQ ? ARGC_HRQ : ARGC_HRS);
+
+	*orig_arg = cur_arg + 1;
+	return ACT_RET_PRS_OK;
+}
+
+
 /* Release memory allocated by an http redirect action. */
 static void release_http_redir(struct act_rule *rule)
 {
@@ -1790,36 +1817,37 @@ static enum act_parse_ret parse_http_strict_mode(const char **args, int *orig_ar
 
 static struct action_kw_list http_req_actions = {
 	.kw = {
-		{ "add-acl",          parse_http_set_map,              1 },
-		{ "add-header",       parse_http_set_header,           0 },
-		{ "allow",            parse_http_allow,                0 },
-		{ "auth",             parse_http_auth,                 0 },
-		{ "capture",          parse_http_req_capture,          0 },
-		{ "del-acl",          parse_http_set_map,              1 },
-		{ "del-header",       parse_http_del_header,           0 },
-		{ "del-map",          parse_http_set_map,              1 },
-		{ "deny",             parse_http_deny,                 0 },
-		{ "disable-l7-retry", parse_http_req_disable_l7_retry, 0 },
-		{ "early-hint",       parse_http_set_header,           0 },
-		{ "redirect",         parse_http_redirect,             0 },
-		{ "reject",           parse_http_action_reject,        0 },
-		{ "replace-header",   parse_http_replace_header,       0 },
-		{ "replace-path",     parse_replace_uri,               0 },
-		{ "replace-uri",      parse_replace_uri,               0 },
-		{ "replace-value",    parse_http_replace_header,       0 },
-		{ "set-header",       parse_http_set_header,           0 },
-		{ "set-log-level",    parse_http_set_log_level,        0 },
-		{ "set-map",          parse_http_set_map,              1 },
-		{ "set-method",       parse_set_req_line,              0 },
-		{ "set-mark",         parse_http_set_mark,             0 },
-		{ "set-nice",         parse_http_set_nice,             0 },
-		{ "set-path",         parse_set_req_line,              0 },
-		{ "set-query",        parse_set_req_line,              0 },
-		{ "set-tos",          parse_http_set_tos,              0 },
-		{ "set-uri",          parse_set_req_line,              0 },
-		{ "strict-mode",      parse_http_strict_mode,          0 },
-		{ "tarpit",           parse_http_deny,                 0 },
-		{ "track-sc",         parse_http_track_sc,             1 },
+		{ "add-acl",           parse_http_set_map,              1 },
+		{ "add-header",        parse_http_set_header,           0 },
+		{ "allow",             parse_http_allow,                0 },
+		{ "auth",              parse_http_auth,                 0 },
+		{ "capture",           parse_http_req_capture,          0 },
+		{ "del-acl",           parse_http_set_map,              1 },
+		{ "del-header",        parse_http_del_header,           0 },
+		{ "del-header-prefix", parse_http_del_header_prefix,    0 },
+		{ "del-map",           parse_http_set_map,              1 },
+		{ "deny",              parse_http_deny,                 0 },
+		{ "disable-l7-retry",  parse_http_req_disable_l7_retry, 0 },
+		{ "early-hint",        parse_http_set_header,           0 },
+		{ "redirect",          parse_http_redirect,             0 },
+		{ "reject",            parse_http_action_reject,        0 },
+		{ "replace-header",    parse_http_replace_header,       0 },
+		{ "replace-path",      parse_replace_uri,               0 },
+		{ "replace-uri",       parse_replace_uri,               0 },
+		{ "replace-value",     parse_http_replace_header,       0 },
+		{ "set-header",        parse_http_set_header,           0 },
+		{ "set-log-level",     parse_http_set_log_level,        0 },
+		{ "set-map",           parse_http_set_map,              1 },
+		{ "set-method",        parse_set_req_line,              0 },
+		{ "set-mark",          parse_http_set_mark,             0 },
+		{ "set-nice",          parse_http_set_nice,             0 },
+		{ "set-path",          parse_set_req_line,              0 },
+		{ "set-query",         parse_set_req_line,              0 },
+		{ "set-tos",           parse_http_set_tos,              0 },
+		{ "set-uri",           parse_set_req_line,              0 },
+		{ "strict-mode",       parse_http_strict_mode,          0 },
+		{ "tarpit",            parse_http_deny,                 0 },
+		{ "track-sc",          parse_http_track_sc,             1 },
 		{ NULL, NULL }
 	}
 };
@@ -1828,26 +1856,27 @@ INITCALL1(STG_REGISTER, http_req_keywords_register, &http_req_actions);
 
 static struct action_kw_list http_res_actions = {
 	.kw = {
-		{ "add-acl",         parse_http_set_map,        1 },
-		{ "add-header",      parse_http_set_header,     0 },
-		{ "allow",           parse_http_allow,          0 },
-		{ "capture",         parse_http_res_capture,    0 },
-		{ "del-acl",         parse_http_set_map,        1 },
-		{ "del-header",      parse_http_del_header,     0 },
-		{ "del-map",         parse_http_set_map,        1 },
-		{ "deny",            parse_http_deny,           0 },
-		{ "redirect",        parse_http_redirect,       0 },
-		{ "replace-header",  parse_http_replace_header, 0 },
-		{ "replace-value",   parse_http_replace_header, 0 },
-		{ "set-header",      parse_http_set_header,     0 },
-		{ "set-log-level",   parse_http_set_log_level,  0 },
-		{ "set-map",         parse_http_set_map,        1 },
-		{ "set-mark",        parse_http_set_mark,       0 },
-		{ "set-nice",        parse_http_set_nice,       0 },
-		{ "set-status",      parse_http_set_status,     0 },
-		{ "set-tos",         parse_http_set_tos,        0 },
-		{ "strict-mode",     parse_http_strict_mode,    0 },
-		{ "track-sc",        parse_http_track_sc,       1 },
+		{ "add-acl",           parse_http_set_map,           1 },
+		{ "add-header",        parse_http_set_header,        0 },
+		{ "allow",             parse_http_allow,             0 },
+		{ "capture",           parse_http_res_capture,       0 },
+		{ "del-acl",           parse_http_set_map,           1 },
+		{ "del-header",        parse_http_del_header,        0 },
+		{ "del-header-prefix", parse_http_del_header_prefix, 0 },
+		{ "del-map",           parse_http_set_map,           1 },
+		{ "deny",              parse_http_deny,              0 },
+		{ "redirect",          parse_http_redirect,          0 },
+		{ "replace-header",    parse_http_replace_header,    0 },
+		{ "replace-value",     parse_http_replace_header,    0 },
+		{ "set-header",        parse_http_set_header,        0 },
+		{ "set-log-level",     parse_http_set_log_level,     0 },
+		{ "set-map",           parse_http_set_map,           1 },
+		{ "set-mark",          parse_http_set_mark,          0 },
+		{ "set-nice",          parse_http_set_nice,          0 },
+		{ "set-status",        parse_http_set_status,        0 },
+		{ "set-tos",           parse_http_set_tos,           0 },
+		{ "strict-mode",       parse_http_strict_mode,       0 },
+		{ "track-sc",          parse_http_track_sc,          1 },
 		{ NULL, NULL }
 	}
 };
